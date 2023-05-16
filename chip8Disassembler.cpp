@@ -1,62 +1,114 @@
 #include <iostream>
 #include <fstream>
 #include <ios>
+#include <stdint.h>
 
-void DisassembleChip8op( unsigned char *buffer, int pc)
+
+void logicalOperators(uint8_t lastnib, std::uint8_t *buffer, int pc)
 {
-    unsigned char *code = &buffer[pc];
-    unsigned char firstnib = (code[0] >> 4);
+    std::uint8_t *code = &buffer[pc];
+
+    switch(lastnib)
+    {
+        case 0: printf("%-10s V%01X,V%01X", "MOV.", code[0]&0xf, code[1]>>4); break;
+        case 1: printf("%-10s V%01X,V%01X", "OR.", code[0]&0xf, code[1]>>4); break;
+        case 2: printf("%-10s V%01X,V%01X", "AND.", code[0]&0xf, code[1]>>4); break;
+        case 3: printf("%-10s V%01X,V%01X", "XOR.", code[0]&0xf, code[1]>>4); break;
+        case 4: printf("%-10s V%01X,V%01X", "ADD.", code[0]&0xf, code[1]>>4); break;
+        case 5: printf("%-10s V%01X,V%01X,V%01X", "SUB.", code[0]&0xf, code[0]&0xf, code[1]>>4); break;
+        case 6: printf("%-10s V%01X,V%01X", "SHR.", code[0]&0xf, code[1]>>4); break;
+        case 7: printf("%-10s V%01X,V%01X,V%01X", "SUB.", code[0]&0xf, code[1]>>4, code[1]>>4); break;
+        case 0xe: printf("%-10s V%01X,V%01X", "SHL.", code[0]&0xf, code[1]>>4); break;
+        default: printf("UNKNOWN 8"); break;
+    }
+}
+
+void specialOperations(std::uint8_t *buffer, int pc)
+{
+    std::uint8_t *code = &buffer[pc];
+
+    switch(code[1])
+    {
+        case 0xe0: printf("%-10s", "CLS"); break;
+        case 0xee: printf("%-10s", "RLS"); break;
+        default: printf("Unkown 0 "); break;
+    }
+}
+
+void keyboardOperations(std::uint8_t *buffer, int pc)
+{
+    std::uint8_t *code = &buffer[pc];
+    switch(code[1])
+    {
+        case 0x9E: printf("%-10s V%01X", "SKIPKEY.Y", code[0]&0xf); break;
+        case 0xA1: printf("%-10s V%01X", "SKIPKEY.N", code[0]&0xf); break;
+        default: printf("UNKNOWN E"); break;
+    }
+}
+
+void otherOperations(std::uint8_t *buffer, int pc)
+{
+    std::uint8_t *code = &buffer[pc];
+
+    switch(code[1])
+    {
+        case 0x07: printf("%-10s V%01X,DELAY", "MOV", code[0]&0xf); break;
+        case 0x0a: printf("%-10s V%01X", "KEY", code[0]&0xf); break;
+        case 0x15: printf("%-10s DELAY,V%01X", "MOV", code[0]&0xf); break;
+        case 0x18: printf("%-10s SOUND,V%01X", "MOV", code[0]&0xf); break;
+        case 0x1e: printf("%-10s I,V%01X", "ADI", code[0]&0xf); break;
+        case 0x29: printf("%-10s I,V%01X", "SPRITECHAR", code[0]&0xf); break;
+        case 0x33: printf("%-10s (I),V%01X", "MOVBCD", code[0]&0xf); break;
+        case 0x55: printf("%-10s (I),V0-V%01X", "MOVM", code[0]&0xf); break;
+        case 0x65: printf("%-10s V0-V%01X,(I)", "MOVM", code[0]&0xf); break;
+        default: printf("UNKNOWN F"); break;
+    }
+}
+
+void DisassembleChip8op(std::uint8_t *buffer, int pc)
+{
+    std::uint8_t *code = &buffer[pc];
+    std::uint8_t firstnib = (code[0] >> 4);
 
     printf("%04x %02x %02x ", pc, code[0], code[1]);
 
     switch(firstnib)
     {
-        case 0x00: printf("0 not handled yet\n"); break;
-        case 0x01: printf("1 not handled yet\n"); break;
-        case 0x02: printf("2 not handled yet\n"); break;
-        case 0x03: printf("3 not handled yet\n"); break;
-        case 0x04: printf("4 not handled yet\n"); break;
-        case 0x05: printf("5 not handled yet\n"); break;
-        case 0x06: 
-            {
-                unsigned char reg = code[0] & 0x0f;
-                printf("$-10s V#01X, #$%02x", "MVI", reg, code[1]);
-                break;
-            }
-        case 0x07: printf("7 not handled yet\n"); break;
-        case 0x08: printf("8 not handled yet\n"); break;
-        case 0x09: printf("9 not handled yet\n"); break;
-        case 0x0a: 
-            {
-                unsigned char addresshi = code[0] & 0x0f;
-                printf("%-10s I,#$%01x%02x", "MVI", addresshi, code[1]);
-                break;
-            }
-        case 0x0b: printf("b not handled yet\n"); break;
-        case 0x0c: printf("c not handled yet\n"); break;
-        case 0x0d: printf("d not handled yet\n"); break;
-        case 0x0e: printf("e not handled yet\n"); break;
-        case 0x0f: printf("f not handled yet\n"); break;
+        case 0x00: specialOperations(buffer, pc); break;
+        case 0x01: printf("%-10s $%01x%02x", "JUMP", code[0]&0x0f, code[1]); break;
+        case 0x02: printf("%-10s $%01x%02x", "CALL", code[0]&0x0f, code[1]); break;
+        case 0x03: printf("%-10s V%01X, #$%02x", "SKIP.EQ", code[0]&0x0f, code[1]); break;
+        case 0x04: printf("%-10s V%01X, #$%02x", "SKIP.NE", code[0]&0x0f, code[1]); break;
+        case 0x05: printf("%-10s V%01X, #$%02x", "SKIP.EQ", code[0]&0x0f, code[1]>>4); break;
+        case 0x06: printf("%-10s V%01X, #$%02x", "MVI", code[0]&0x0f, code[1]); break;
+        case 0x07: printf("%-10s V%01X,#$%02x", "ADI", code[0]&0xf, code[1]); break;
+        case 0x08: logicalOperators(code[1]>>4, buffer, pc); break;
+        case 0x09: printf("%-10s V%01X,V%01X", "SKIP.NE", code[0]&0xf, code[1]>>4); break;
+        case 0x0a: printf("%-10s I,#$%01x%02x", "MVI", code[0]&0xf, code[1]); break;
+        case 0x0b: printf("%-10s $%01x%02x(V0)", "JUMP", code[0]&0xf, code[1]); break;
+		case 0x0c: printf("%-10s V%01X,#$%02X", "RNDMSK", code[0]&0xf, code[1]); break;
+		case 0x0d: printf("%-10s V%01X,V%01X,#$%01x", "SPRITE", code[0]&0xf, code[1]>>4, code[1]&0xf); break;
+		case 0x0e: keyboardOperations(buffer, pc); break;
+		case 0x0f: otherOperations(buffer, pc); break;
     }
-
 }
 
 int main( int argc, char* argv[])
 {
-    //Open the file as astream of binary and move the file pointer to the end
+    //Open the file as a stream of binary and move the file pointer to the end
     std::fstream file(argv[1], std::ios::in | std::ios::binary | std::ios::ate );
 
     //Early termination
     if(!file.is_open())
     {
-        std::cout << "Could not open file" << std::endl;
+        std::cout << "Could not open file";
         return 1;
     }
 
     //Get size of file and alocate a buffer to hold the contents
     //Memory untill 0x200 is reserved so we add 200 to the size
     std::streampos size = file.tellg() + (std::streamoff)200;
-    unsigned char* buffer = new unsigned char[size];
+    std::uint8_t* buffer = new std::uint8_t[size];
 
     //Go back to the beggining of the file and fill the buffer
     file.seekg(0, std::ios::beg);
@@ -70,6 +122,8 @@ int main( int argc, char* argv[])
     {
         DisassembleChip8op(buffer, pc);
         pc += 2;
+
+        std::cout << std::endl;
     }
 
 

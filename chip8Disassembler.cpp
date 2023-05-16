@@ -80,10 +80,10 @@ void DisassembleChip8op(std::uint8_t *buffer, int pc)
         case 0x09: printf("%-10s V%01X,V%01X", "SKIP.NE", code[0]&0xf, code[1]>>4); break;
         case 0x0a: printf("%-10s I,#$%01x%02x", "MVI", code[0]&0xf, code[1]); break;
         case 0x0b: printf("%-10s $%01x%02x(V0)", "JUMP", code[0]&0xf, code[1]); break;
-		case 0x0c: printf("%-10s V%01X,#$%02X", "RNDMSK", code[0]&0xf, code[1]); break;
-		case 0x0d: printf("%-10s V%01X,V%01X,#$%01x", "SPRITE", code[0]&0xf, code[1]>>4, code[1]&0xf); break;
-		case 0x0e: keyboardOperations(code); break;
-		case 0x0f: otherOperations(code); break;
+	case 0x0c: printf("%-10s V%01X,#$%02X", "RNDMSK", code[0]&0xf, code[1]); break;
+	case 0x0d: printf("%-10s V%01X,V%01X,#$%01x", "SPRITE", code[0]&0xf, code[1]>>4, code[1]&0xf); break;
+	case 0x0e: keyboardOperations(code); break;
+	case 0x0f: otherOperations(code); break;
     }
 }
 
